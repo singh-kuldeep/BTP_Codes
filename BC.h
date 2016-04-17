@@ -8,7 +8,7 @@
 void BC(vector<vector<vector<vector<float> > > > & U,
 	vector<vector<vector<vector<float> > > > & y_face_area,
 	vector<vector<vector<vector<float> > > > & z_face_area,
-	 int Nx, int Ny, int Nz)
+	 int Nx, int Ny, int Nz, int viscus)
 {
 	// inilet conditions (user given data)
 	// one has to maintion only inlet Mach number totalpressure and
@@ -141,14 +141,41 @@ void BC(vector<vector<vector<vector<float> > > > & U,
 		}
 	}
 
-
+// INVISID WALL 
 	// updating the wall ghost cell(Y - wall) 
 	//[Here the bottom wall (y = 0 ) is viscous ]
 	for (int i = 2; i < Nx-2; ++i)
 	{
 		for (int k = 2; k < Nz-2; ++k)
 		{
+		if (viscus == 1)
+			{
+			// VISCOUS BOTTAM Y WALL
+			
+			// updating the wall ghost cell(Y - wall) 
+			//[Here the bottom wall (y = 0 ) is viscous ]
+			
 			//using rightcell(j=2) filling j=1
+			// using zero order extrapolation
+			U[i][1][k][0] =  U[i][2][k][0] ;
+			U[i][1][k][1] = -U[i][2][k][1] ;
+			U[i][1][k][2] = -U[i][2][k][2] ;
+			U[i][1][k][3] = -U[i][2][k][3] ;
+			U[i][1][k][4] =  U[i][2][k][4] ;
+
+			//using rightcell(j=3) filling j=0
+			// using zero order extrapolation
+			U[i][0][k][0] =  U[i][3][k][0] ;
+			U[i][0][k][1] = -U[i][3][k][1] ;
+			U[i][0][k][2] = -U[i][3][k][2] ;
+			U[i][0][k][3] = -U[i][3][k][3] ;
+			U[i][0][k][4] =  U[i][3][k][4] ;
+				/* code */
+			}	
+		if (viscus == 0)
+			{
+			// INVISCID BOTTAM Y WALL	
+			// using rightcell(j=2) filling j=1
 			// using zero order extrapolation
 			U[i][1][k][0] =  U[i][2][k][0] ;
 			U[i][1][k][1] =  U[i][2][k][1] ;
@@ -156,13 +183,14 @@ void BC(vector<vector<vector<vector<float> > > > & U,
 			U[i][1][k][3] =  U[i][2][k][3] ;
 			U[i][1][k][4] =  U[i][2][k][4] ;
 
-			//using rightcell(j=3) filling j=0
+			// using rightcell(j=3) filling j=0
 			// using zero order extrapolation
 			U[i][0][k][0] =  U[i][3][k][0] ;
 			U[i][0][k][1] =  U[i][3][k][1] ;
 			U[i][0][k][2] = -U[i][3][k][2] ;
 			U[i][0][k][3] =  U[i][3][k][3] ;
 			U[i][0][k][4] =  U[i][3][k][4] ;
+			}	
 
 			//using rightcell(j=Ny-3) filling j=Ny-2
 			// here every term has been multiplied by -1 
@@ -225,5 +253,6 @@ void BC(vector<vector<vector<vector<float> > > > & U,
 			U[i][j][Nz-1][4] =  U[i][j][Nz-4][4] ;
 		}
 	}
+
 }
 

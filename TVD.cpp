@@ -28,7 +28,7 @@ subscript _V is for "Volume"
 #include "netflux.h"
 #include "BC.h"
 #include "grid.h"
-// #include "delta_t.h" 
+#include "delta_t.h" 
 
 #define GAMMA 1.4
 #define R 287.14
@@ -40,7 +40,7 @@ using namespace std ;
 void BC(vector<vector<vector<vector<float> > > > & U, 
 	vector<vector<vector<vector<float> > > > & y_face_area, 
 	vector<vector<vector<vector<float> > > > & z_face_area, 
-	int nx, int ny, int nz) ;
+	int nx, int ny, int nz, int viscus) ;
 
 /*
 grid function generates the area vector and volume for the all cells in the
@@ -56,9 +56,14 @@ void grid(vector<vector<vector<vector<float> > > > & x_face_area,
 
 int main ()
 {
+	// If you wants to run it for viscous case then put viscus = 1 ;
+	// If you wants to run it for invisid case then put viscus = 0 ;
+	int viscus = 0 ; 
+
 	time_t start, end ; /*These are the start and end point of the timer*/
 	time(&start); /*Here timer starts counting the time*/ 
 
+	float dt ; // delta t
 	int nt = 100000; /* Total time steps which will be input 
 	given from the user*/
 	float CFL = 0.1 ; /* CFL number give and stability condition and it 
@@ -68,9 +73,9 @@ int main ()
 	// float delta_x = 0.0011 ; 
 	// float delta_y = 0.00015 ;
 	// float delta_z = 0.001 ;
-	
-	int nx = (10 + 4);
-	int ny = 20 + 4 ;
+	int N = 15 ;
+	int nx = (N + 4);
+	int ny = 2*N + 4 ;
 	int nz = 1 + 4 ; 
 	//Only one live cell in z direction because of 2D flow
 	/* These are the grid specification 
@@ -155,8 +160,8 @@ int main ()
 	for (int t = 0; t < nt; ++t)
 	// time marching starts here 	
 	{
-
-		BC(U,y_face_area,z_face_area,nx,ny,nz) ; 
+		dt = 1 ; // this is just rendom value for initial purpose
+		BC(U,y_face_area,z_face_area,nx,ny,nz, viscus) ; 
 		/*To apply proper boundary condition, before every time step we need to
 		 have proper primitive variable value in the ghost cells, which is 
 		 done by calling the BC function. This takes care of all Inlet, Exit,
@@ -184,6 +189,10 @@ int main ()
 
 					delta_t delta_t(U[i][j][k],
 						characterstic_length[i][j][k],CFL) ;
+					if (dt > delta_t.dt)
+					{
+						dt = delta_t.dt ; // finding the global minimum delta t 
+					}
 					/*Because we are interested in the steady flow solution so
 					 there is no need to have a global delta_t, we can vary 
 					 delta_t locally by keeping the	CFL number constant 
@@ -193,15 +202,15 @@ int main ()
 
 					netflux x_face(U,x_face_area,
 						y_face_area,z_face_area,V_cell,delta_t.dt,i-1,
-						j,k,i,j,k,i+1,j,k,i+2,j,k);
+						j,k,i,j,k,i+1,j,k,i+2,j,k,viscus);
 
 					netflux y_face(U,x_face_area,
 						y_face_area,z_face_area,V_cell,delta_t.dt,i,j-1
-						,k,i,j,k,i,j+1,k,i,j+2,k);
+						,k,i,j,k,i,j+1,k,i,j+2,k,viscus);
 
 					netflux z_face(U,x_face_area,
 						y_face_area,z_face_area,V_cell,delta_t.dt,i,j,
-						k-1,i,j,k,i,j,k+1,i,j,k+2);
+						k-1,i,j,k,i,j,k+1,i,j,k+2,viscus);
 					/*For each cell location net flux vector is calculated at
 					 all three "Right faces", using class net flux
 					 net_flux contains three fluxes Euler, viscus and
@@ -270,7 +279,6 @@ int main ()
 		sqrt(energy_residual/((nx-4)*(ny-4)*(nz-4))) << endl ;
 		//Writing the residuals of each time step in the Residual_file 
 		// float dt = delta_t.dt ;
-		cout << "timestep   " << t << "   delta t   " << 0 << "   Residual  " <<rho_residual <<endl ; 
 
 		for (int i = 2; i < nx-2; ++i)
 		{
@@ -288,8 +296,9 @@ int main ()
 		/*before going to the new time-step update U
 		by U_new*/
 
-		if (t%250 == 0)
+		if (t%10 == 0)
 		{
+		cout << "timestep   " << t << "   delta t   " << dt << "   Residual  " <<rho_residual <<endl ; 
 			ofstream kullu_2D ;
 			kullu_2D.open("conserved_variables.dat");
 			//kullu_2D << "rho" << "," << "rho*u" << "," << "rho*

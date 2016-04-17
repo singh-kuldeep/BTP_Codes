@@ -55,7 +55,7 @@ while true
 		% plotting the residuals 
 		pause(4) ;
 		figure(2)
-		plot(time,density_res,'LineWidth',1) ;
+		loglog(time,density_res,'LineWidth',1) ;
 		title('Density residuals v/s time');
 
 		

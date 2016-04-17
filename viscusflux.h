@@ -27,7 +27,7 @@ class viscusflux
 		vector<vector<vector<vector<float> > > > & x_face_area,
 		vector<vector<vector<vector<float> > > > & y_face_area,
 		vector<vector<vector<vector<float> > > > & z_face_area,
-		vector<vector<vector<float> > >& cell_volume, int i, int j, int k)
+		vector<vector<vector<float> > >& cell_volume, int i, int j, int k, int viscus)
 	{
 		partial_derivative del(U, x_face_area, y_face_area, z_face_area, 
 			cell_volume, i, j, k) ;
@@ -38,35 +38,39 @@ class viscusflux
 		float temperature = pressure / (R*U[i][j][k][0]) ;
 
 		float mu_M = b*sqrt(temperature)/(1+S/temperature) ;
-
+	if (viscus == 1)
+		{
 		// viscus flux
-		// x_viscus_flux[0] = 0 ; 
-		// x_viscus_flux[1] = 2*mu_M*del.dubydx - 2*mu_M*(del.dubydx + del.dvbydy
-		// 	+ del.dwbydz)/3 ; // tau_xx
-		// x_viscus_flux[2] = mu_M*(del.dubydy + del.dvbydx) ; // tau_xy
-		// x_viscus_flux[3] = mu_M*(del.dubydz + del.dwbydx) ; // tau_xz
-		// x_viscus_flux[4] = (x_viscus_flux[1]*U[i][j][k][1] + x_viscus_flux[2]*
-		// 	U[i][j][k][2] + x_viscus_flux[3]*U[i][j][k][3])/U[i][j][k][0] + 
-		// 	(GAMMA*mu_M/Prd)*del.debydx ;
+		x_viscus_flux[0] = 0 ; 
+		x_viscus_flux[1] = 2*mu_M*del.dubydx - 2*mu_M*(del.dubydx + del.dvbydy
+			+ del.dwbydz)/3 ; // tau_xx
+		x_viscus_flux[2] = mu_M*(del.dubydy + del.dvbydx) ; // tau_xy
+		x_viscus_flux[3] = mu_M*(del.dubydz + del.dwbydx) ; // tau_xz
+		x_viscus_flux[4] = (x_viscus_flux[1]*U[i][j][k][1] + x_viscus_flux[2]*
+			U[i][j][k][2] + x_viscus_flux[3]*U[i][j][k][3])/U[i][j][k][0] + 
+			(GAMMA*mu_M/Prd)*del.debydx ;
 
-		// y_viscus_flux[0] = 0 ; 
-		// y_viscus_flux[1] = x_viscus_flux[2] ; // tau_yx = tau_xy
-		// y_viscus_flux[2] = (2*mu_M*del.dvbydy-2*mu_M*(del.dubydx + del.dvbydy 
-		// 	+ del.dwbydz)/3) ; // tau_yy
-		// y_viscus_flux[3] = (mu_M*(del.dvbydz + del.dwbydy)) ; // tau_yz
-		// y_viscus_flux[4] =(y_viscus_flux[1]*U[i][j][k][1] + y_viscus_flux[2]*
-		// 	U[i][j][k][2] + y_viscus_flux[3]*U[i][j][k][3])/U[i][j][k][0] + 
-		// 	(GAMMA*mu_M/Prd)*del.debydy;
+		y_viscus_flux[0] = 0 ; 
+		y_viscus_flux[1] = x_viscus_flux[2] ; // tau_yx = tau_xy
+		y_viscus_flux[2] = (2*mu_M*del.dvbydy-2*mu_M*(del.dubydx + del.dvbydy 
+			+ del.dwbydz)/3) ; // tau_yy
+		y_viscus_flux[3] = (mu_M*(del.dvbydz + del.dwbydy)) ; // tau_yz
+		y_viscus_flux[4] =(y_viscus_flux[1]*U[i][j][k][1] + y_viscus_flux[2]*
+			U[i][j][k][2] + y_viscus_flux[3]*U[i][j][k][3])/U[i][j][k][0] + 
+			(GAMMA*mu_M/Prd)*del.debydy;
 
-		// z_viscus_flux[0] = 0 ; 
-		// z_viscus_flux[1] = x_viscus_flux[3] ; // tau_zx = tau_xz
-		// z_viscus_flux[2] = y_viscus_flux[3] ; // tau_zy
-		// z_viscus_flux[2] = 2*mu_M*del.dwbydz - 2*mu_M*(del.dubydx + del.dvbydy
-		// 	+ del.dwbydz)/3 ; // tau_zz
-		// z_viscus_flux[4] = (z_viscus_flux[1]*U[i][j][k][1] + z_viscus_flux[2]*
-		// 	U[i][j][k][2] + z_viscus_flux[3]*U[i][j][k][3])/U[i][j][k][0] +
-		// 	(GAMMA*mu_M/Prd)*del.debydz ;		
+		z_viscus_flux[0] = 0 ; 
+		z_viscus_flux[1] = x_viscus_flux[3] ; // tau_zx = tau_xz
+		z_viscus_flux[2] = y_viscus_flux[3] ; // tau_zy
+		z_viscus_flux[2] = 2*mu_M*del.dwbydz - 2*mu_M*(del.dubydx + del.dvbydy
+			+ del.dwbydz)/3 ; // tau_zz
+		z_viscus_flux[4] = (z_viscus_flux[1]*U[i][j][k][1] + z_viscus_flux[2]*
+			U[i][j][k][2] + z_viscus_flux[3]*U[i][j][k][3])/U[i][j][k][0] +
+			(GAMMA*mu_M/Prd)*del.debydz ;		
+		}	
 
+	if(viscus == 0)
+		{
 		// INVISID CASE
 		x_viscus_flux[0] = 0 ;
 		x_viscus_flux[1] = 0 ;
@@ -85,6 +89,8 @@ class viscusflux
 		z_viscus_flux[2] = 0 ;
 		z_viscus_flux[3] = 0 ;
 		z_viscus_flux[4] = 0 ;
-	 };
+		}
+	
+	};
 	 // ~viscusflux();	
 };

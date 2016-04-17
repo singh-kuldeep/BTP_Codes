@@ -22,7 +22,7 @@ class netflux
 	vector<vector<vector<vector<float> > > > & z_face_area,
 	vector<vector<vector<float> > >& V_cell, float dt, int i_l_m, int
 	j_l_m, int k_l_m, int i_l, int j_l, int k_l, int i_r, int j_r, int k_r,
-	int i_r_p, int j_r_p, int k_r_p )
+	int i_r_p, int j_r_p, int k_r_p, int viscus)
 {
 	/*U is conserved variable vector
 
@@ -93,9 +93,9 @@ class netflux
 
 	// Viscus flux
 	viscusflux leftviscus( U, x_face_area, y_face_area, z_face_area, 
-	V_cell, i_l, j_l, k_l) ; 
+	V_cell, i_l, j_l, k_l, viscus) ; 
 	viscusflux rightviscus(U, x_face_area, y_face_area, z_face_area,
-	V_cell, i_r, j_r, k_r) ;
+	V_cell, i_r, j_r, k_r, viscus) ;
 
 	// Averaged interface Euler flux 
 	float E_int[5] ;  
