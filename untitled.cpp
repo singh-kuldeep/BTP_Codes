@@ -1,5 +1,5 @@
 //kullu tha commant :P
-
+/*
 cc -I ../CGNS_CVS/cgnslib -c write_grid_str.c
 cc -o write_grid_str_c write_grid_str.o -L ../CGNS_CVS/cgnslib/LINUX -lcgns
 

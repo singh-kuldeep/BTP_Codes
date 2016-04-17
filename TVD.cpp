@@ -28,7 +28,7 @@ subscript _V is for "Volume"
 #include "netflux.h"
 #include "BC.h"
 #include "grid.h"
-#include "delta_t.h" 
+// #include "delta_t.h" 
 
 #define GAMMA 1.4
 #define R 287.14
