@@ -50,7 +50,6 @@ while true
 		%plotting the velocity at the exit
 		figure(1)
 		quiver(x,y,u,v) ;
-  
 		
 		% plotting the residuals 
 		pause(4) ;
