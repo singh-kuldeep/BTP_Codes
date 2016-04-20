@@ -10,95 +10,15 @@ void BC(vector<vector<vector<vector<float> > > > & U,
 	vector<vector<vector<vector<float> > > > & z_face_area,
 	 int Nx, int Ny, int Nz, int viscus)
 {
-	// inilet conditions (user given data)
-	// one has to maintion only inlet Mach number totalpressure and
-	// // the totaltemperature
-	// float Static_pressure = 1e5 - 0.56 ; // Atmoshperic pressure
-	// // float temperature = 273.15 ; // Atmoshperic pressure
-	// // float density = 1.2918786 ;
-	// // float Mach_free_stream = 0.40; // this is given by user 
-	// // float free_Stream_Velocity = 331.368688 ; // M*u
-	// // float total_energy = 324240.0 ;
-	// float pressure ; 
-
-	// // Inlet ghost cell updating usinig the totel 
-	// //quantities(T_0, P_0) and flow direction  
-	// for (int j =2; j < Ny-2; ++j)
-	// {
-	// 	for (int k =2; k < Nz-2; ++k)
-	// 	{	
-	// 		// these values are given based on the freestream conditions
-	// 		pressure = 0.4*(U[3][j][k][4] - 0.5*( pow(U[3][j][k][1],2) + pow(
-	// 			U[3][j][k][2],2) +  pow(U[3][j][k][1],2) )/U[3][j][k][0] ) ; 
-
-	// 		U[0][j][k][0] = 1.2918786 ; //density ;
-	// 		U[0][j][k][1] = 171.2352464; //inletdensity*inletvelocity ;
-	// 		U[0][j][k][2] = 0 ;
-	// 		U[0][j][k][3] = 0 ;
-	// 		U[0][j][k][4] = (pressure/0.4)+11348.40 ; 
-	// 		//inletpressure/(GAMMA-1) + 0.5*inletdensity*inletvelocity*
-	// 		//inletvelocity ;
-
-	// 		pressure = 0.4*(U[2][j][k][4] - 0.5*( pow(U[2][j][k][1],2) + pow(
-	// 			U[2][j][k][2],2) + pow(U[2][j][k][1],2) )/U[2][j][k][0] ) ; 
-			
-	// 		U[1][j][k][0] = 1.2918786 ; //density ;
-	// 		U[1][j][k][1] = 171.2352464 ;//inletdensity*inletvelocity ;
-	// 		U[1][j][k][2] = 0 ;
-	// 		U[1][j][k][3] = 0 ;
-	// 		U[1][j][k][4] = (pressure/0.4)+11348.40 ; 
-	// 		//inletpressure/(GAMMA-1) + 0.5*inletdensity*inletvelocity*
-	// 		//inletvelocity ;
-	// 	}
-	// }
-
-
-
-
-	// /* at exit updating the x ghost cell (Aim is to keep exit static pressure
-	//  constant througout the iteration) and 
-	//  P_live = P_ghost because the flow is subsonic*/ 
-
-	// for (int j =2; j < Ny-2; ++j)
-	// {
-	// 	for (int k =2; k < Nz-2; ++k)
-	// 	{
-	// 		// p_live = p_ghost => p_live  =  Static_pressure 
-	// 		U[Nx-3][j][k][4] = ( Static_pressure/(GAMMA-1) +  0.5*( pow(
-	// 			U[Nx-3][j][k][1],2) + pow(U[Nx-3][j][k][2],2)+pow(
-	// 			U[Nx-3][j][k][3],2) )/U[Nx-3][j][k][0] ) ;
-
-	// 		U[Nx-4][j][k][4] = ( Static_pressure/(GAMMA-1) +  0.5*( pow(
-	// 			U[Nx-4][j][k][1],2) + pow(U[Nx-4][j][k][2],2)+pow(
-	// 			U[Nx-4][j][k][3],2) )/U[Nx-4][j][k][0] ) ;
-
-	// 		for (int l = 0; l < 4; ++l) 
-			//  rho is same and velocity is linearly extraploeted  
-			// pressure is little less than the inlet pressure due to viscocity
-			// so e will alos be different   
-			
-	// 		{
-	// 			U[Nx-2][j][k][l] = U[Nx-3][j][k][l]  + (U[Nx-3][j][k][l] - U[Nx-4][j][k][l]) ;
-	// 			U[Nx-1][j][k][l] = U[Nx-2][j][k][l]  + (U[Nx-2][j][k][l] - U[Nx-3][j][k][l]) ;
-	// 		} 
-	// 		U[Nx-2][j][k][4] = ( Static_pressure/(GAMMA-1) +  0.5*( pow(
-	// 			U[Nx-2][j][k][1],2) + pow(U[Nx-2][j][k][2],2)+pow(
-	// 			U[Nx-2][j][k][3],2) )/U[Nx-2][j][k][0] ) ;
-
-	// 		U[Nx-1][j][k][4] = ( Static_pressure/(GAMMA-1) +  0.5*( pow(
-	// 			U[Nx-1][j][k][1],2) + pow(U[Nx-1][j][k][2],2)+pow(
-	// 			U[Nx-1][j][k][3],2) )/U[Nx-1][j][k][0] ) ;
-
-	// 	}
-	// }
-
 // inilet conditions (user given data)
 	// one has to maintion only inlet Mach number totalpressure and the totaltemperature
 	float totaltemperature = 350 ;
 	float totalpressure = 492766.8;
 	float totaldensity = totalpressure / (gasconstant*totaltemperature) ;
+	float exitstaticpressure = 1.0871e+05 ;
 
 	// Inlet ghost cell updating usinig the totel quantities(T_0, P_0) and flow direction  
+	// The velocity is extraploted from the inside 
 	for (int j =2; j < Ny-2; ++j)
 	{
 		for (int k =2; k < Nz-2; ++k)

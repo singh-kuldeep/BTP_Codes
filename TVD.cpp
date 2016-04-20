@@ -40,7 +40,7 @@ using namespace std ;
 void BC(vector<vector<vector<vector<float> > > > & U, 
 	vector<vector<vector<vector<float> > > > & y_face_area, 
 	vector<vector<vector<vector<float> > > > & z_face_area, 
-	int nx, int ny, int nz, int viscus) ;
+	int Nx, int Ny, int Nz, int viscus) ;
 
 /*
 grid function generates the area vector and volume for the all cells in the
@@ -51,17 +51,17 @@ void grid(vector<vector<vector<vector<float> > > > & x_face_area,
 		  vector<vector<vector<vector<float> > > > & y_face_area, 
 		  vector<vector<vector<vector<float> > > > & z_face_area, 
 		  vector<vector<vector<float> > > & V_cell, 
-		  int nx, int ny, int nz, 
+		  int Nx, int Ny, int Nz, int N,  
 		  vector<vector<vector<float> > > & characterstic_length) ;
 
 int main ()
 {
-	// If you wants to run it for viscous case then put viscus = 1 ;
-	// If you wants to run it for invisid case then put viscus = 0 ;
-	int viscus = 0 ; 
-
 	time_t start, end ; /*These are the start and end point of the timer*/
 	time(&start); /*Here timer starts counting the time*/ 
+	
+	// If you wants to run it for viscous case then put viscus = 1 ;
+	// If you wants to run it for invisid case then put viscus = 0 ;
+	int viscus = 1 ; 
 
 	float dt ; // delta t
 	int nt = 100000; /* Total time steps which will be input 
@@ -74,14 +74,15 @@ int main ()
 	// float delta_y = 0.00015 ;
 	// float delta_z = 0.001 ;
 	int N = 15 ;
-	int nx = (N + 4);
-	int ny = 2*N + 4 ;
-	int nz = 1 + 4 ; 
+	int Nx = N + 10; // total cell in x direction including the ghost cells
+	int Ny = N + 4 ; // total cell in y direction including the ghost cells
+	int Nz = 5 + 4 ;  // total cell in z direction including the ghost cells
+
 	//Only one live cell in z direction because of 2D flow
 	/* These are the grid specification 
 		1. Structured grid has been used 
-		2. If user wants denser grid than he can increase the nx, ny and nz
-		3. Please remember that nx, ny and nz also includes the ghost cell so 
+		2. If user wants denser grid than he can increase the Nx, Ny and Nz
+		3. Please remember that Nx, Ny and Nz also includes the ghost cell so 
 		actual cell no will be 4 less in count, in each direction 
 	*/
 	
@@ -93,32 +94,32 @@ int main ()
 
 	// this store previous time step values of conserved variables
 	//conserved variables (rho, Momentum, energy)
-	matrix4D U(nx,Dim3(ny,Dim2(nz,Dim1(5)))); 
+	matrix4D U(Nx,Dim3(Ny,Dim2(Nz,Dim1(5)))); 
 
 	// this store new time step values of conserved variables 
-	matrix4D U_new(nx,Dim3(ny,Dim2(nz,Dim1(5)))); 
+	matrix4D U_new(Nx,Dim3(Ny,Dim2(Nz,Dim1(5)))); 
 	
-	matrix4D x_face_area(nx+1,Dim3(ny+1,Dim2(nz+1,Dim1(3)))); 
-	matrix4D y_face_area(nx+1,Dim3(ny+1,Dim2(nz+1,Dim1(3)))); 
-	matrix4D z_face_area(nx+1,Dim3(ny+1,Dim2(nz+1,Dim1(3)))); 
+	matrix4D x_face_area(Nx+1,Dim3(Ny+1,Dim2(Nz+1,Dim1(3)))); 
+	matrix4D y_face_area(Nx+1,Dim3(Ny+1,Dim2(Nz+1,Dim1(3)))); 
+	matrix4D z_face_area(Nx+1,Dim3(Ny+1,Dim2(Nz+1,Dim1(3)))); 
 
-	Dim3 V_cell(nx,Dim2(ny,Dim1(nz)));
-	Dim3 characterstic_length(nx,Dim2(ny,Dim1(nz))); // Characteristic length
+	Dim3 V_cell(Nx,Dim2(Ny,Dim1(Nz)));
+	Dim3 characterstic_length(Nx,Dim2(Ny,Dim1(Nz))); // Characteristic length
 	//These variables stores grid information(Area vectors and cell volume)
 	/*x_face_area, y_face_area, z_face_area store the area vectors of "Right
 	 faces" of each cell in the 3D*/  
 	
-	grid(x_face_area,y_face_area,z_face_area,V_cell,nx,ny,nz,
+	grid(x_face_area,y_face_area,z_face_area,V_cell,Nx,Ny,Nz,N,
 		characterstic_length);
 
 	/* By calling the grid function grids information is generated and grid 
 	points are stored in a file */
 
-	for (int i = 0; i < nx; ++i)
+	for (int i = 0; i < Nx; ++i)
 	{
-		for (int j = 0; j < ny; ++j)
+		for (int j = 0; j < Ny; ++j)
 		{
-			for (int k = 0; k < nz; ++k)
+			for (int k = 0; k < Nz; ++k)
 			{
 				U[i][j][k][0] = 1.16;
 				U[i][j][k][1] = 0;
@@ -141,7 +142,7 @@ int main ()
 
 	ofstream extra_data_file ;
 	extra_data_file.open("Extra_data_file.dat");
-	extra_data_file << nx-4 << "," << ny-4 << "," << nz-4 << "," << 1.2918786 
+	extra_data_file << Nx-4 << "," << Ny-4 << "," << Nz-4 << "," << 1.2918786 
 	<<"," << (171.2352464/1.2918786) << endl ; 
 	/*Live cells grid points, free-stream density and free-stream velocity 
 	is being stored in the Extra_data_file.dat file, values are stored in the
@@ -161,7 +162,7 @@ int main ()
 	// time marching starts here 	
 	{
 		dt = 1 ; // this is just rendom value for initial purpose
-		BC(U,y_face_area,z_face_area,nx,ny,nz, viscus) ; 
+		BC(U,y_face_area,z_face_area,Nx,Ny,Nz, viscus) ; 
 		/*To apply proper boundary condition, before every time step we need to
 		 have proper primitive variable value in the ghost cells, which is 
 		 done by calling the BC function. This takes care of all Inlet, Exit,
@@ -169,11 +170,11 @@ int main ()
 
 		/*Here three for loop is for go to each and every cell in the 3D 
 		domain*/
-		for (int i = 1; i < nx-2; ++i)
+		for (int i = 1; i < Nx-2; ++i)
 		{
-			for (int j = 1; j < ny-2; ++j)
+			for (int j = 1; j < Ny-2; ++j)
 			{
-				for (int k = 1; k < nz-2; ++k)
+				for (int k = 1; k < Nz-2; ++k)
 				{
 					float x_interface_volume = 0.5*(V_cell[i][j][k] + 
 						V_cell[i+1][j][k]) ;
@@ -252,9 +253,9 @@ int main ()
 		/*Five above maintained parameters are the residual. Residuals help
 		analyzing the stability and the convergence. Here the second norm was
 		used for the residual calculation*/
-		for (int x = 2; x < nx-2; ++x)
+		for (int x = 2; x < Nx-2; ++x)
 			{
-				for (int y = 2; y < ny-2; ++y)
+				for (int y = 2; y < Ny-2; ++y)
 				{
 					rho_residual   += pow((U_new
 					[x][y][2][0]-U[x][y][2][0]),2);
@@ -273,18 +274,18 @@ int main ()
 				}
 			}
 
-		Residual_file << t << "," << sqrt(rho_residual/((nx-4)*(ny-4)*(nz-4))) << "," << 
-		sqrt(x_momentum_residual/((nx-4)*(ny-4)*(nz-4))) << "," << sqrt(y_momentum_residual/((nx-4)*(ny-4)*(nz-4)))
-		<< "," << sqrt(z_momentum_residual/((nx-4)*(ny-4)*(nz-4))) << "," << 
-		sqrt(energy_residual/((nx-4)*(ny-4)*(nz-4))) << endl ;
+		Residual_file << t << "," << sqrt(rho_residual/((Nx-4)*(Ny-4)*(Nz-4))) << "," << 
+		sqrt(x_momentum_residual/((Nx-4)*(Ny-4)*(Nz-4))) << "," << sqrt(y_momentum_residual/((Nx-4)*(Ny-4)*(Nz-4)))
+		<< "," << sqrt(z_momentum_residual/((Nx-4)*(Ny-4)*(Nz-4))) << "," << 
+		sqrt(energy_residual/((Nx-4)*(Ny-4)*(Nz-4))) << endl ;
 		//Writing the residuals of each time step in the Residual_file 
 		// float dt = delta_t.dt ;
 
-		for (int i = 2; i < nx-2; ++i)
+		for (int i = 2; i < Nx-2; ++i)
 		{
-			for (int j = 2; j < ny-2; ++j)
+			for (int j = 2; j < Ny-2; ++j)
 			{
-				for (int k = 2; k < nz-2; ++k)
+				for (int k = 2; k < Nz-2; ++k)
 				{
 					for (int l = 0; l < 5; ++l)
 					{
@@ -304,9 +305,9 @@ int main ()
 			//kullu_2D << "rho" << "," << "rho*u" << "," << "rho*
 			//v" << "," << "rho*w" << "," << "energy" << endl ;
 
-			for (int i = 2; i < nx-2; ++i)
+			for (int i = 2; i < Nx-2; ++i)
 			{
-				for (int j = 2; j < ny-2; ++j)
+				for (int j = 2; j < Ny-2; ++j)
 				{
 					kullu_2D << U[i][j][2][0] << "," << U[i][j][2][1] << "," 
 					<< U[i][j][2][2] << "," << U[i][j][2][3] << "," <<
