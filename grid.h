@@ -6,16 +6,19 @@ cells */
 #include "math.h"
 #include <vector>
 
-const double PI=3.14159265;
+// const double PI=3.14159265;
 using namespace std ; 
 
 // Function defines the area vector and cell volumes  
 void grid( vector<vector<vector<vector<float> > > > & x_face_area,
 	  vector<vector<vector<vector<float> > > > & y_face_area,
       vector<vector<vector<vector<float> > > > & z_face_area,
+      vector<vector<vector<vector<float> > > > & x_face_normal,
+	  vector<vector<vector<vector<float> > > > & y_face_normal,
+      vector<vector<vector<vector<float> > > > & z_face_normal,
       vector<vector<vector<float> > > & V_cell, 
       int Nx, int Ny, int Nz, int N,
-      vector<vector<vector<float> > > & characterstic_length)
+      vector<vector<vector<float> > > & characterstic_length, float theta)
 {
 // Grids for bump(this is the first case which will test the scheme)
 
@@ -37,7 +40,7 @@ void grid( vector<vector<vector<vector<float> > > > & x_face_area,
 	float delta = lenght / N ; 
 	float deltatx = delta ;
 	float deltaty = lenght/(Ny) ;
-	float deltatz = delta ;
+	float deltatz = deltatx ;
 
 
 	// this file is opend to store the grid poits
@@ -63,7 +66,7 @@ void grid( vector<vector<vector<vector<float> > > > & x_face_area,
 				{
 					float del_y_i = bumphight * (i-Nsb)/(Neb-Nsb) ; 
 					grid_point[i][j][k][1] = del_y_i + j * (lenght-del_y_i)/(Ny); 
-					// this dy should start from dy = delta and than should start decreasing 
+					// this dy should start from dy = delta and than should start decreasing
 				}
 				else if(i>= Neb + 2 && i <= Neb + 2 + (Neb - Nsb) )
 				{
@@ -77,6 +80,31 @@ void grid( vector<vector<vector<vector<float> > > > & x_face_area,
 			}
 			// grid << grid_point[i][j][4][0] << "," << grid_point[i][j][4][1] << endl ; 
 		}	
+	}
+
+
+	// characterstic_length calculation 
+	for (int i = 0; i < Nx; ++i)
+	{
+		for (int j = 0; j < Ny; ++j)
+		{
+			for (int k = 0; k < Nz; ++k)
+			{
+				characterstic_length[i][j][k] = 1 ;
+				if (characterstic_length[i][j][k] > (grid_point[i+1][j][k][0] - grid_point[i][j][k][0]))
+				{
+					characterstic_length[i][j][k] = (grid_point[i+1][j][k][0] - grid_point[i][j][k][0]) ;
+				}
+				else if (characterstic_length[i][j][k] > (grid_point[i][j+1][k][1] - grid_point[i][j][k][1]))
+				{
+					characterstic_length[i][j][k] = (grid_point[i][j+1][k][1] - grid_point[i][j][k][1]) ;
+				}
+				else 
+				{
+					characterstic_length[i][j][k] = (grid_point[i][j][k+1][2] - grid_point[i][j][k][2]) ;
+				}
+			}
+		}
 	}
 
 	// here comes the area vectors
@@ -98,6 +126,19 @@ void grid( vector<vector<vector<vector<float> > > > & x_face_area,
 				z_face_area[i][j][k][1] = 0 ;
 				z_face_area[i][j][k][2] = 0.5*deltatx*( (grid_point[i][j+1][k][1]-grid_point[i][j][k][1]) + 
 					(grid_point[i+1][j+1][k][1]-grid_point[i+1][j][k][1]) ); 
+
+				x_face_area[i][j][k][0] = 1 ;
+				x_face_area[i][j][k][1] = 0 ;
+				x_face_area[i][j][k][2] = 0 ;
+
+				y_face_area[i][j][k][0] = y_face_area[i][j][k][0] / sqrt(pow(y_face_area[i][j][k][0],2) + pow(y_face_area[i][j][k][1],2)) ;
+				y_face_area[i][j][k][1] = y_face_area[i][j][k][1] / sqrt(pow(y_face_area[i][j][k][0],2) + pow(y_face_area[i][j][k][1],2)) ;
+				y_face_area[i][j][k][2] = 0 ;
+
+				z_face_area[i][j][k][0] = 0 ; 
+				z_face_area[i][j][k][1] = 0 ;
+				z_face_area[i][j][k][2] = 1 ; 
+					
 			}
 		}	
 	}
@@ -130,17 +171,26 @@ void grid( vector<vector<vector<vector<float> > > > & x_face_area,
 // here are the grid points and area vector with theta degree rotation 
 // and the cell volume will not change after the rotation so no neet to worry abuout that
 
-	float theta = PI * 45 / 180 ; // theta is radtion	about the y axis
+	// float theta = PI * 45 / 180 ; // theta is radtion	about the y axis
+	for (int i = 0; i <  Nx+1 ; ++i)
+	{
+		for (int j = 0; j < Ny+1; ++j)
+		{
+			for (int k = 0; k < Nz+1; ++k)
+			{
+				grid_point[i][j][k][0] = cos(theta)*grid_point[i][j][k][0] + sin(theta)*grid_point[i][j][k][2] ;  
+				grid_point[i][j][k][1] = grid_point[i][j][k][1] ; 
+				grid_point[i][j][k][2] = -sin(theta)*grid_point[i][j][k][0] + cos(theta)*grid_point[i][j][k][2] ;
+			}
+		}
+	}
+
 	for (int i = 0; i <  Nx ; ++i)
 	{
 		for (int j = 0; j < Ny; ++j)
 		{
 			for (int k = 0; k < Nz; ++k)
 			{
-				grid_point[i][j][k][0] = cos(theta)*grid_point[i][j][k][0] + sin(theta)*grid_point[i][j][k][2] ;  
-				grid_point[i][j][k][1] = grid_point[i][j][k][1] ; 
-				grid_point[i][j][k][2] = -sin(theta)*grid_point[i][j][k][0] + cos(theta)*grid_point[i][j][k][2] ;
-
 				x_face_area[i][j][k][0] = cos(theta)*x_face_area[i][j][k][0] + sin(theta)*x_face_area[i][j][k][2] ;
 				x_face_area[i][j][k][1] = x_face_area[i][j][k][1] ;
 				x_face_area[i][j][k][2] = -sin(theta)*x_face_area[i][j][k][0] + cos(theta)*x_face_area[i][j][k][2] ;	 
@@ -152,6 +202,18 @@ void grid( vector<vector<vector<vector<float> > > > & x_face_area,
 				z_face_area[i][j][k][0] = cos(theta)*z_face_area[i][j][k][0] + sin(theta)*z_face_area[i][j][k][2] ;
 				z_face_area[i][j][k][1] = z_face_area[i][j][k][1] ;
 				z_face_area[i][j][k][2] = -sin(theta)*z_face_area[i][j][k][0] + cos(theta)*z_face_area[i][j][k][2] ;
+
+				x_face_normal[i][j][k][0] = cos(theta)*x_face_normal[i][j][k][0] + sin(theta)*x_face_normal[i][j][k][2] ;
+				x_face_normal[i][j][k][1] = x_face_normal[i][j][k][1] ;
+				x_face_normal[i][j][k][2] = -sin(theta)*x_face_normal[i][j][k][0] + cos(theta)*x_face_normal[i][j][k][2] ;	 
+				
+				y_face_normal[i][j][k][0] = cos(theta)*y_face_normal[i][j][k][0] + sin(theta)*y_face_normal[i][j][k][2] ;
+				y_face_normal[i][j][k][1] = y_face_normal[i][j][k][1] ;
+				y_face_normal[i][j][k][2] = -sin(theta)*y_face_normal[i][j][k][0] + cos(theta)*y_face_normal[i][j][k][2] ;
+
+				z_face_normal[i][j][k][0] = cos(theta)*z_face_normal[i][j][k][0] + sin(theta)*z_face_normal[i][j][k][2] ;
+				z_face_normal[i][j][k][1] = z_face_normal[i][j][k][1] ;
+				z_face_normal[i][j][k][2] = -sin(theta)*z_face_normal[i][j][k][0] + cos(theta)*z_face_normal[i][j][k][2] ;
 			}
 		}
 	}
@@ -232,34 +294,34 @@ void grid( vector<vector<vector<vector<float> > > > & x_face_area,
 // 		}	
 // 	}
 
-// 	// cell volume 
-// 	for (int i = 0; i  < nx; ++i)
-// 	{
-// 		for (int  j= 0;  j < ny; ++j)
-// 		{
-// 			for (int  k= 0;  k < nz; ++k)
-// 			{
-// 				V_cell[i][j][k] = deltax*deltay*deltaz*pow(1.1,j) ;
+	// cell volume 
+	// for (int i = 0; i  < nx; ++i)
+	// {
+	// 	for (int  j= 0;  j < ny; ++j)
+	// 	{
+	// 		for (int  k= 0;  k < nz; ++k)
+	// 		{
+	// 			V_cell[i][j][k] = deltax*deltay*deltaz*pow(1.1,j) ;
 
-// 				characterstic_length[i][j][k] = 10000000 ; 
-// 				if (characterstic_length[i][j][k] > deltax)
-// 				{
-// 					characterstic_length[i][j][k] = deltax ;
-// 				}
-// 				if (characterstic_length[i][j][k] > deltay*pow(1.1,j))
-// 				{
-// 					characterstic_length[i][j][k] = deltay*pow(1.1,j) ;
-// 				}
-// 				if (characterstic_length[i][j][k] > deltaz)
-// 				{
-// 					characterstic_length[i][j][k] = deltaz ;
-// 				}
+	// 			characterstic_length[i][j][k] = 10000000 ; 
+	// 			if (characterstic_length[i][j][k] > deltax)
+	// 			{
+	// 				characterstic_length[i][j][k] = deltax ;
+	// 			}
+	// 			if (characterstic_length[i][j][k] > deltay*pow(1.1,j))
+	// 			{
+	// 				characterstic_length[i][j][k] = deltay*pow(1.1,j) ;
+	// 			}
+	// 			if (characterstic_length[i][j][k] > deltaz)
+	// 			{
+	// 				characterstic_length[i][j][k] = deltaz ;
+	// 			}
 					
-// 			}
-// 		}	
-// 		// cout << "characterstic_length hai ye " <<
-// 		// characterstic_length[i][j][k] << endl ;
-// 	}
+	// 		}
+	// 	}	
+	// 	// cout << "characterstic_length hai ye " <<
+	// 	// characterstic_length[i][j][k] << endl ;
+	// }
 
 // // this file is opend to store the grid poits
 // 	ofstream grid ;

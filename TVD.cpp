@@ -33,14 +33,17 @@ subscript _V is for "Volume"
 #define GAMMA 1.4
 #define R 287.14
 #define CP 717.5
+const double PI=3.14159265;
 
 using namespace std ;
 
 // BC function implements the boundary condition
 void BC(vector<vector<vector<vector<float> > > > & U, 
 	vector<vector<vector<vector<float> > > > & y_face_area, 
-	vector<vector<vector<vector<float> > > > & z_face_area, 
-	int Nx, int Ny, int Nz, int viscus) ;
+	vector<vector<vector<vector<float> > > > & z_face_area,
+	vector<vector<vector<vector<float> > > > & y_face_normal, 
+	vector<vector<vector<vector<float> > > > & z_face_normal, 
+	int Nx, int Ny, int Nz, int viscus, float theta) ;
 
 /*
 grid function generates the area vector and volume for the all cells in the
@@ -49,10 +52,13 @@ explained in the same file
 */
 void grid(vector<vector<vector<vector<float> > > > & x_face_area, 
 		  vector<vector<vector<vector<float> > > > & y_face_area, 
-		  vector<vector<vector<vector<float> > > > & z_face_area, 
+		  vector<vector<vector<vector<float> > > > & z_face_area,
+	      vector<vector<vector<vector<float> > > > & x_face_normal,
+		  vector<vector<vector<vector<float> > > > & y_face_normal,
+	      vector<vector<vector<vector<float> > > > & z_face_normal, 
 		  vector<vector<vector<float> > > & V_cell, 
 		  int Nx, int Ny, int Nz, int N,  
-		  vector<vector<vector<float> > > & characterstic_length) ;
+		  vector<vector<vector<float> > > & characterstic_length, float theta) ;
 
 int main ()
 {
@@ -61,8 +67,10 @@ int main ()
 	
 	// If you wants to run it for viscous case then put viscus = 1 ;
 	// If you wants to run it for invisid case then put viscus = 0 ;
-	int viscus = 1 ; 
+	int viscus = 0 ; 
 
+	float theta = PI * 0 / 180 ; // theta is radtion	about the y axis
+	
 	float dt ; // delta t
 	int nt = 100000; /* Total time steps which will be input 
 	given from the user*/
@@ -73,10 +81,10 @@ int main ()
 	// float delta_x = 0.0011 ; 
 	// float delta_y = 0.00015 ;
 	// float delta_z = 0.001 ;
-	int N = 15 ;
-	int Nx = N + 10; // total cell in x direction including the ghost cells
+	int N = 10 ;
+	int Nx = N + 15; // total cell in x direction including the ghost cells
 	int Ny = N + 4 ; // total cell in y direction including the ghost cells
-	int Nz = 5 + 4 ;  // total cell in z direction including the ghost cells
+	int Nz = 2 + 4 ;  // total cell in z direction including the ghost cells
 
 	//Only one live cell in z direction because of 2D flow
 	/* These are the grid specification 
@@ -99,9 +107,16 @@ int main ()
 	// this store new time step values of conserved variables 
 	matrix4D U_new(Nx,Dim3(Ny,Dim2(Nz,Dim1(5)))); 
 	
+	// Face area vectors 
 	matrix4D x_face_area(Nx+1,Dim3(Ny+1,Dim2(Nz+1,Dim1(3)))); 
 	matrix4D y_face_area(Nx+1,Dim3(Ny+1,Dim2(Nz+1,Dim1(3)))); 
 	matrix4D z_face_area(Nx+1,Dim3(Ny+1,Dim2(Nz+1,Dim1(3)))); 
+
+	//face normal vector (which will be used to calculate the BC)
+	matrix4D x_face_normal(Nx+1,Dim3(Ny+1,Dim2(Nz+1,Dim1(3)))); 
+	matrix4D y_face_normal(Nx+1,Dim3(Ny+1,Dim2(Nz+1,Dim1(3)))); 
+	matrix4D z_face_normal(Nx+1,Dim3(Ny+1,Dim2(Nz+1,Dim1(3)))); 
+
 
 	Dim3 V_cell(Nx,Dim2(Ny,Dim1(Nz)));
 	Dim3 characterstic_length(Nx,Dim2(Ny,Dim1(Nz))); // Characteristic length
@@ -109,8 +124,8 @@ int main ()
 	/*x_face_area, y_face_area, z_face_area store the area vectors of "Right
 	 faces" of each cell in the 3D*/  
 	
-	grid(x_face_area,y_face_area,z_face_area,V_cell,Nx,Ny,Nz,N,
-		characterstic_length);
+	grid(x_face_area,y_face_area,z_face_area,x_face_normal,y_face_normal,z_face_normal,V_cell,Nx,Ny,Nz,N,
+		characterstic_length, theta);
 
 	/* By calling the grid function grids information is generated and grid 
 	points are stored in a file */
@@ -122,13 +137,13 @@ int main ()
 			for (int k = 0; k < Nz; ++k)
 			{
 				U[i][j][k][0] = 1.16;
-				U[i][j][k][1] = 0;
+				U[i][j][k][1] = 1;
 				U[i][j][k][2] = 0;
 				U[i][j][k][3] = 0;
 				U[i][j][k][4] = 271767;
 
 				U_new[i][j][k][0] = 1.16;
-				U_new[i][j][k][1] = 0;
+				U_new[i][j][k][1] = 1;
 				U_new[i][j][k][2] = 0;
 				U_new[i][j][k][3] = 0;
 				U_new[i][j][k][4] = 271767;
@@ -162,7 +177,7 @@ int main ()
 	// time marching starts here 	
 	{
 		dt = 1 ; // this is just rendom value for initial purpose
-		BC(U,y_face_area,z_face_area,Nx,Ny,Nz, viscus) ; 
+		BC(U,y_face_area,z_face_area,y_face_normal,z_face_normal,Nx,Ny,Nz, viscus, theta) ; 
 		/*To apply proper boundary condition, before every time step we need to
 		 have proper primitive variable value in the ghost cells, which is 
 		 done by calling the BC function. This takes care of all Inlet, Exit,
@@ -273,6 +288,7 @@ int main ()
 					[x][y][2][4]-U[x][y][2][4]),2);     
 				}
 			}
+		// cout << "    U   " << U[2][2][2][0] << "  " << U[2][2][2][1] << "  " << U[2][2][2][4] << endl ;
 
 		Residual_file << t << "," << sqrt(rho_residual/((Nx-4)*(Ny-4)*(Nz-4))) << "," << 
 		sqrt(x_momentum_residual/((Nx-4)*(Ny-4)*(Nz-4))) << "," << sqrt(y_momentum_residual/((Nx-4)*(Ny-4)*(Nz-4)))
@@ -299,7 +315,7 @@ int main ()
 
 		if (t%10 == 0)
 		{
-		cout << "timestep   " << t << "   delta t   " << dt << "   Residual  " <<rho_residual <<endl ; 
+		cout << "timestep   " << t << "   delta t   " << dt << "   Residual  " << rho_residual <<endl ; 
 			ofstream kullu_2D ;
 			kullu_2D.open("conserved_variables.dat");
 			//kullu_2D << "rho" << "," << "rho*u" << "," << "rho*
